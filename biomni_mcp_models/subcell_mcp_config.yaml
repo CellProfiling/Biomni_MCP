@@ -1,0 +1,54 @@
+# MCP Configuration for SubCell Integration with Biomni
+# This configuration enables SubCell protein subcellular localization prediction
+# through Singularity containers for HPC environments
+
+mcp_servers:
+  subcell:
+    # Use Singularity container for HPC compatibility
+    command: ["singularity", "run", "./biomni_mcp_models/subcell/build/subcell-mcp.sif"]
+    enabled: true
+    description: "SubCell protein subcellular localization prediction from fluorescence microscopy"
+    
+    # Environment variables (if needed)
+    env:
+      # Set compute device preference (will fallback to CPU if GPU not available)
+      CUDA_VISIBLE_DEVICES: "${CUDA_VISIBLE_DEVICES}"
+      
+    # Tool definitions (optional - will be auto-discovered)
+    # Including these for documentation and explicit parameter specification
+    tools:
+      - biomni_name: predict_subcellular_localization
+        description: "Predict subcellular localization from multi-channel fluorescence microscopy images (RYBG)"
+        parameters:
+          r_image_path: {type: str, required: false, description: "Absolute path to red channel image (microtubules marker)"}
+          y_image_path: {type: str, required: false, description: "Absolute path to yellow channel image (ER marker)"}
+          b_image_path: {type: str, required: false, description: "Absolute path to blue channel image (nuclei marker)"}
+          g_image_path: {type: str, required: false, description: "Absolute path to green channel image (protein of interest)"}
+          return_attention: {type: bool, required: false, default: false, description: "Include attention maps in output"}
+          
+      - biomni_name: extract_subcellular_features  
+        description: "Extract 1536-dimensional feature embeddings from fluorescence images"
+        parameters:
+          r_image_path: {type: str, required: false, description: "Absolute path to red channel image (microtubules marker)"}
+          y_image_path: {type: str, required: false, description: "Absolute path to yellow channel image (ER marker)"}
+          b_image_path: {type: str, required: false, description: "Absolute path to blue channel image (nuclei marker)"}
+          g_image_path: {type: str, required: false, description: "Absolute path to green channel image (protein of interest)"}
+          
+      - biomni_name: get_localization_probabilities
+        description: "Get subcellular localization probability predictions for 31 cellular compartments"
+        parameters:
+          r_image_path: {type: str, required: false, description: "Absolute path to red channel image (microtubules marker)"}
+          y_image_path: {type: str, required: false, description: "Absolute path to yellow channel image (ER marker)"}
+          b_image_path: {type: str, required: false, description: "Absolute path to blue channel image (nuclei marker)"}
+          g_image_path: {type: str, required: false, description: "Absolute path to green channel image (protein of interest)"}
+          
+      - biomni_name: find_similar_proteins
+        description: "Identify imaged protein or find proteins with similar subcellular localization patterns using cosine similarity"
+        parameters:
+          query_embedding: {type: "List[float]", required: true, description: "1536-dimensional feature vector from extract_subcellular_features"}
+          reference_model: {type: str, required: false, default: "MAE", description: "Reference database (MAE or ViT)"}
+          num_neighbors: {type: int, required: false, default: 5, description: "Number of similar proteins to return"}
+          
+      - biomni_name: get_model_info
+        description: "Get model metadata including supported channels and available localization classes"
+        parameters: {}

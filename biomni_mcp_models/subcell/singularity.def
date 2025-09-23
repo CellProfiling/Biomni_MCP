@@ -1,0 +1,128 @@
+Bootstrap: docker
+From: python:3.11-slim
+
+%labels
+    Author Biomni Team
+    Version 1.0
+    Description SubCell protein subcellular localization prediction MCP server
+
+%environment
+    export PYTHONPATH="/app/subcell_portable:$PYTHONPATH"
+    export MODEL_CACHE_DIR="/app/models"
+    export DEVICE_ORDER="PCI_BUS_ID"
+    export CUDA_DEVICE_ORDER="PCI_BUS_ID"
+
+%files
+    # Copy all source files into the container
+    ./subcell_portable /app/subcell_portable
+    ./mcp_server.py /app/
+    ./subcell_wrapper.py /app/
+    ./requirements.txt /app/
+    # Copy reference embeddings
+    ./reference_embeddings/* /app/subcell_portable/subcell_features/
+
+%post
+    # Update system and install dependencies
+    apt-get update && apt-get install -y \
+        wget \
+        curl \
+        && rm -rf /var/lib/apt/lists/*
+    
+    # Install Python dependencies
+    cd /app
+    pip install --no-cache-dir -r requirements.txt
+    
+    # Install MCP server dependencies
+    pip install --no-cache-dir mcp fastmcp
+    
+    # Create models directory and download the rybg MAE model
+    mkdir -p /app/models/rybg/mae_contrast_supcon_model
+    
+    # Download model files using Python (to handle S3 properly)
+    python3 -c "
+import os
+import sys
+sys.path.append('/app/subcell_portable')
+os.chdir('/app/subcell_portable')
+
+# Set up configuration for rybg model
+import yaml
+config = {
+    'model_channels': 'rybg',
+    'model_type': 'mae_contrast_supcon_model', 
+    'update_model': True,
+    'create_csv': False,
+    'gpu': -1
+}
+
+# Import the model downloading logic from process.py
+import subprocess
+import requests
+import boto3
+from botocore import UNSIGNED
+from botocore.config import Config
+from botocore.exceptions import ClientError
+from urllib.parse import urlparse
+
+# Load model configuration
+with open('models/rybg/mae_contrast_supcon_model/model_config.yaml', 'r') as f:
+    model_config = yaml.safe_load(f)
+
+# Download models
+with open('models_urls.yaml', 'r') as f:
+    url_info = yaml.safe_load(f)
+
+# Download classifier
+for i, url in enumerate(url_info['rybg']['mae_contrast_supcon_model']['classifiers']):
+    output_path = model_config['classifier_paths'][i]
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    if url.startswith('s3://'):
+        s3 = boto3.client('s3', config=Config(signature_version=UNSIGNED))
+        components = urlparse(url)
+        s3.download_file(components.netloc, components.path[1:], output_path)
+    else:
+        response = requests.get(url)
+        if response.status_code == 200:
+            with open(output_path, 'wb') as f:
+                f.write(response.content)
+
+# Download encoder
+url = url_info['rybg']['mae_contrast_supcon_model']['encoder']
+output_path = model_config['encoder_path']
+os.makedirs(os.path.dirname(output_path), exist_ok=True)
+if url.startswith('s3://'):
+    s3 = boto3.client('s3', config=Config(signature_version=UNSIGNED))
+    components = urlparse(url)
+    s3.download_file(components.netloc, components.path[1:], output_path)
+else:
+    response = requests.get(url)
+    if response.status_code == 200:
+        with open(output_path, 'wb') as f:
+            f.write(response.content)
+
+print('Model download completed successfully')
+"
+    
+    # Create subcell_features directory if it doesn't exist
+    mkdir -p /app/subcell_portable/subcell_features
+    
+    # Set permissions
+    chmod +x /app/mcp_server.py
+    
+%runscript
+    cd /app
+    exec python mcp_server.py "$@"
+
+%help
+    This container provides SubCell protein subcellular localization prediction 
+    as an MCP server for integration with Biomni.
+    
+    Usage:
+    singularity run subcell.sif
+    
+    The container exposes the following MCP tools:
+    - predict_subcellular_localization: Predict subcellular localization from RYBG images
+    - extract_subcellular_features: Extract feature embeddings from images  
+    - get_localization_probabilities: Get only probability predictions
+    - find_similar_proteins: Find proteins with similar localization patterns
+    - get_model_info: Get model metadata and class information

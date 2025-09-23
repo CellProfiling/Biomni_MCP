@@ -1,0 +1,19 @@
+INFO: Start: 2025/08/21 17:25:07
+INFO: Parameters used:
+INFO: {'log': <Logger SubCell inference (INFO)>, 'model_channels': 'rybg', 'model_type': 'mae_contrast_supcon_model', 'update_model': True, 'create_csv': True, 'gpu': -1}
+INFO: ----------
+INFO: - Downloading models...
+INFO:   - models/rybg/mae_contrast_supcon_model/classifier_s0.pth updated.
+INFO:   - models/rybg/mae_contrast_supcon_model/encoder.pth updated.
+WARNING: CUDA not available. Using CPU.
+INFO: - Saved results for U2OS_CTNNB1_FOV-1_cell-3, locations predicted [Plasma membrane,Nucleoplasm,Cytosol]
+INFO: - Saved results for U2OS_CTNNB1_FOV-1_cell-1, locations predicted [Plasma membrane,Cytosol,Nucleoplasm]
+INFO: - Saved results for U2OS_CTNNB1_FOV-1_cell-2, locations predicted [Plasma membrane,Nucleoplasm,Cytosol]
+INFO: - Saved results for U2OS_NFKB1_FOV-1_cell-2, locations predicted [Plasma membrane,Nucleoplasm,Cytosol]
+INFO: - Saved results for U2OS_NFKB1_FOV-1_cell-3, locations predicted [Plasma membrane,Nucleoplasm,Cytosol]
+INFO: - Saved results for U2OS_NFKB1_FOV-1_cell-1, locations predicted [Plasma membrane,Cytosol,Nucleoplasm]
+INFO: - Saved results for U2OS_TP53_FOV-1_cell-2, locations predicted [Plasma membrane,Cytosol,Nucleoplasm]
+INFO: - Saved results for U2OS_TP53_FOV-1_cell-1, locations predicted [Plasma membrane,Cytosol,Nucleoplasm]
+INFO: - Saved results for U2OS_TP53_FOV-1_cell-3, locations predicted [Plasma membrane,Cytosol,Nucleoplasm]
+INFO: ----------
+INFO: End: 2025/08/21 17:25:24
